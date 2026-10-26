@@ -3,79 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Health Risk Dashboard</title>
+    <title>AI Health Assessment</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; padding: 40px; }
-        .card { max-width: 450px; margin: auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #333; }
-        label { font-weight: bold; display: block; margin-top: 10px; }
-        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 100%; margin-top: 20px; padding: 10px; background-color: #28a745; color: white; border: none; font-size: 16px; border-radius: 4px; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .result-box { margin-top: 20px; padding: 15px; border-radius: 5px; text-align: center; display: none; }
-        .high-risk { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .low-risk { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background-color: #242424;
+            padding: 30px;
+            border-radius: 8px;
+            width: 350px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            background: #333333;
+            border: 1px solid #444444;
+            color: #ffffff;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #332222;
+            border: 1px solid #553333;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffcccc;
+            word-break: break-word;
+        }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>AI Health Assessment</h2>
-    
-    <label>Weight (kg):</label>
-    <input type="number" id="weight" placeholder="e.g. 70" value="70">
+    <div class="card">
+        <h2>AI Health Assessment</h2>
+        
+        <!-- Form එක හරහා දත්ත /predict වෙත යවයි -->
+        <form action="/predict" method="POST">
+            <label>Weight (kg):</label>
+            <input type="number" step="any" name="weight" required>
+            
+            <label>Height (meters):</label>
+            <input type="number" step="any" name="height" required>
+            
+            <label>Age (years):</label>
+            <input type="number" name="age" required>
+            
+            <button type="submit">Predict Risk</button>
+        </form>
 
-    <label>Height (meters):</label>
-    <input type="number" step="0.01" id="height" placeholder="e.g. 1.75" value="1.75">
-
-    <label>Age (years):</label>
-    <input type="number" id="age" placeholder="e.g. 25" value="25">
-
-    <button onclick="predictRisk()">Predict Risk</button>
-
-    <div id="result" class="result-box"></div>
-</div>
-
-<script>
-    async function predictRisk() {
-        const weight = document.getElementById('weight').value;
-        const height = document.getElementById('height').value;
-        const age = document.getElementById('age').value;
-        const resultDiv = document.getElementById('result');
-
-        if (!weight || !height || !age) {
-            alert("කරුණාකර සියලුම දත්ත ඇතුළත් කරන්න!");
-            return;
-        }
-
-        resultDiv.style.display = "block";
-        resultDiv.className = "result-box";
-        resultDiv.innerHTML = "Processing AI Model...";
-
-        try {
-            const response = await fetch('/predict-risk', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weight: parseFloat(weight), height: parseFloat(height), age: parseFloat(age) })
-            });
-
-            const data = await response.json();
-
-            if (data.status === "success") {
-                if (data.prediction.includes("High")) {
-                    resultDiv.className = "result-box high-risk";
-                } else {
-                    resultDiv.className = "result-box low-risk";
-                }
-                resultDiv.innerHTML = `<strong>Status:</strong> ${data.prediction}<br><strong>Risk Level:</strong> ${data.risk_percentage}%`;
-            } else {
-                resultDiv.innerHTML = "Error: " + data.message;
-            }
-        } catch (error) {
-            resultDiv.innerHTML = "Error connecting to server!";
-        }
-    }
-</script>
+        <!-- Python backend එකෙන් එවන prediction_text මෙහි පෙන්වයි -->
+        {% if prediction_text %}
+        <div class="result-box">
+            {{ prediction_text }}
+        </div>
+        {% endif %}
+    </div>
 
 </body>
 </html>

@@ -1,40 +1,43 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request
 import joblib
 import numpy as np
 
 app = Flask(__name__)
 
-# AI Model එක Memory එකට Load වීම
-model = joblib.load('health_model.pkl')
+# යාවත්කාලීන කළ Model එක Load කරගැනීම
+model = joblib.load('model.pkl')
 
-# 1. බ්‍රව්සරයෙන් එන අයට HTML Dashboard එක පෙන්වන Route එක
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# 2. AI Model එකෙන් Prediction එක ලබා දෙන API Route එක
-@app.route('/predict-risk', methods=['POST'])
-def predict_risk():
+@app.route('/predict', methods=['POST'])
+def predict():
     try:
-        data = request.get_json()
-        weight = float(data['weight'])
-        height = float(data['height'])
-        age = float(data['age'])
+        # පරිශීලකයා ලබාදෙන අගයන් ලබා ගැනීම
+        weight = float(request.form['weight'])
+        height = float(request.form['height'])
+        age = float(request.form['age'])
+
+        # Backend එක තුළ BMI අගය ගණනය කිරීම
+        bmi = weight / (height ** 2)
+
+        # Features 4ම (Weight, Height, Age, BMI) මොඩලයට ලබාදීම
+        features = np.array([[weight, height, age, bmi]])
+        prediction = model.predict(features)[0]
         
-        input_data = np.array([[weight, height, age]])
-        prediction = model.predict(input_data)[0]
-        probability = model.predict_proba(input_data)[0][1] * 100
-        
-        result_text = "High Health Risk" if prediction == 1 else "Normal / Low Risk"
-        
-        return jsonify({
-            "status": "success",
-            "prediction": result_text,
-            "risk_percentage": round(probability, 2),
-            "server": "AWS Cloud Ubuntu EC2"
-        })
+        # ප්‍රතිඵලය තීරණය කිරීම (1 = High Risk, 0 = Low Risk)
+        if prediction == 1:
+            status = "High Health Risk"
+            risk_percent = "75%"
+        else:
+            status = "Normal / Low Risk"
+            risk_percent = "10%"
+
+        return render_template('index.html', prediction_text=f"Status: {status} | Risk Level: {risk_percent} (BMI: {bmi:.2f})")
+
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        return render_template('index.html', prediction_text=f"Error occurred: {str(e)}")
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
