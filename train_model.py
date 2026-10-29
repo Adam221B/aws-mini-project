@@ -12,40 +12,42 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 import joblib
 
-# 1. වඩාත් නිවැරදි සහ විශාල Dataset එකක් සාදා ගැනීම (Realistic Data)
+# දත්ත සකස් කර ගැනීම
 np.random.seed(42)
-n_samples = 500
+n_samples = 600
+weight = np.random.normal(70, 15, n_samples)    # බර (kg)
+height = np.random.normal(1.72, 0.1, n_samples)  # උස (meters)
+age = np.random.randint(18, 65, n_samples)     # වයස
 
-height = np.random.normal(165, 10, n_samples)  # Mean 165cm
-weight = np.random.normal(70, 15, n_samples)   # Mean 70kg
-age = np.random.randint(18, 70, n_samples)
+# BMI අගය ගණනය කිරීම
+bmi = weight / (height ** 2)
 
-# BMI එක මත පදනම්ව Realistic Risk Level එකක් සැකසීම (High BMI + High Age = High Risk)
-bmi = weight / ((height / 100) ** 2)
+# Risk තීරණය කිරීම
 risk = []
 for b, a in zip(bmi, age):
-    if b > 28 or (b > 25 and a > 50):
+    if b > 27 or (b > 25 and a > 45):
         risk.append(1)  # High Risk
     else:
         risk.append(0)  # Low Risk
 
-df = pd.DataFrame({'height': height, 'weight': weight, 'age': age, 'risk': risk})
+# DataFrame එකට Features 4 ම ඇතුළත් කිරීම
+df = pd.DataFrame({'weight': weight, 'height': height, 'age': age, 'bmi': bmi, 'risk': risk})
 
-# 2. Features සහ Target වෙන් කිරීම
-X = df[['height', 'weight', 'age']]
+# Features 4 ක් තෝරා ගැනීම (weight, height, age, bmi)
+X = df[['weight', 'height', 'age', 'bmi']]
 y = df['risk']
 
-# 3. Data Scale කිරීම (Scaling)
+# දත්ත Scale කිරීම (Features 4 කට Scaler එක Fit වේ)
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# 4. Model එක Train කිරීම
+# Model එක Train කිරීම
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
-# 5. Model එක සහ Scaler එක Save කිරීම
+# Save කිරීම
 joblib.dump(model, 'model.pkl')
-joblib.dump(scaler, 'scaler.pkl')  # Scaler එකද Save කරගත යුතුය
+joblib.dump(scaler, 'scaler.pkl')
 
-print("Model and Scaler updated successfully!")
+print("Model and Scaler updated with 4 features successfully!")

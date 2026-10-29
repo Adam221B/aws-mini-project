@@ -20,13 +20,13 @@ def predict():
         height = float(request.form['height'])
         age = float(request.form['age'])
 
-        # BMI අගය ගණනය කිරීම
+        # Backend එක තුළ BMI අගය ගණනය කිරීම
         bmi = weight / (height ** 2)
 
-        # Features 4ම (Weight, Height, Age, BMI) Array එකකට සකස් කිරීම
+        # Features 4 ම (Weight, Height, Age, BMI) Array එකකට සැකසීම
         features = np.array([[weight, height, age, bmi]])
         
-        # දත්ත Model එකට දීමට පෙර Scale කිරීම
+        # Scaler එක හරහා Features 4 ම Scale කිරීම
         features_scaled = scaler.transform(features)
         
         # Prediction ලබාගැනීම
