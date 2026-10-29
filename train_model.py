@@ -1,29 +1,51 @@
+import os
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
 import joblib
 
-# 1. BMI සහ ආන්තික අගයන් (Extreme values) ඇතුළත් කළ Dataset එක
-data = {
-    'weight': [39, 85, 60, 45, 95, 70, 38, 110, 55, 90],
-    'height': [1.60, 1.75, 1.70, 1.55, 1.80, 1.65, 1.60, 1.75, 1.68, 1.82],
-    'age': [25, 45, 30, 22, 50, 35, 26, 55, 29, 48],
-    'risk_level': [1, 1, 0, 0, 1, 0, 1, 1, 0, 1]  # 39kg (Underweight) සඳහා 1 (High Risk) ලෙස ලබා දී ඇත
-}
+# 1. වඩාත් නිවැරදි සහ විශාල Dataset එකක් සාදා ගැනීම (Realistic Data)
+np.random.seed(42)
+n_samples = 500
 
-df = pd.DataFrame(data)
+height = np.random.normal(165, 10, n_samples)  # Mean 165cm
+weight = np.random.normal(70, 15, n_samples)   # Mean 70kg
+age = np.random.randint(18, 70, n_samples)
 
-# 2. BMI අගය ගණනය කර Column එකක් ලෙස එකතු කිරීම
-df['bmi'] = df['weight'] / (df['height'] ** 2)
+# BMI එක මත පදනම්ව Realistic Risk Level එකක් සැකසීම (High BMI + High Age = High Risk)
+bmi = weight / ((height / 100) ** 2)
+risk = []
+for b, a in zip(bmi, age):
+    if b > 28 or (b > 25 and a > 50):
+        risk.append(1)  # High Risk
+    else:
+        risk.append(0)  # Low Risk
 
-# 3. Features (X) සහ Target (y) වෙන් කරගැනීම (BMI එකත් සමඟ)
-X = df[['weight', 'height', 'age', 'bmi']]
-y = df['risk_level']
+df = pd.DataFrame({'height': height, 'weight': weight, 'age': age, 'risk': risk})
 
-# 4. Random Forest Model එක Train කිරීම
+# 2. Features සහ Target වෙන් කිරීම
+X = df[['height', 'weight', 'age']]
+y = df['risk']
+
+# 3. Data Scale කිරීම (Scaling)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# 4. Model එක Train කිරීම
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X, y)
+model.fit(X_train, y_train)
 
-# 5. පුහුණු කළ මොඩලය Save කරගැනීම
+# 5. Model එක සහ Scaler එක Save කිරීම
 joblib.dump(model, 'model.pkl')
-print("Updated BMI-based Model trained and saved successfully as 'model.pkl'!")
+joblib.dump(scaler, 'scaler.pkl')  # Scaler එකද Save කරගත යුතුය
+
+print("Model and Scaler updated successfully!")

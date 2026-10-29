@@ -4,8 +4,9 @@ import numpy as np
 
 app = Flask(__name__)
 
-# යාවත්කාලීන කළ Model එක Load කරගැනීම
+# Model එක සහ Scaler එක Load කරගැනීම
 model = joblib.load('model.pkl')
+scaler = joblib.load('scaler.pkl')
 
 @app.route('/')
 def home():
@@ -19,22 +20,25 @@ def predict():
         height = float(request.form['height'])
         age = float(request.form['age'])
 
-        # Backend එක තුළ BMI අගය ගණනය කිරීම
+        # BMI අගය ගණනය කිරීම
         bmi = weight / (height ** 2)
 
-        # Features 4ම (Weight, Height, Age, BMI) මොඩලයට ලබාදීම
+        # Features 4ම (Weight, Height, Age, BMI) Array එකකට සකස් කිරීම
         features = np.array([[weight, height, age, bmi]])
-        prediction = model.predict(features)[0]
         
-        # ප්‍රතිඵලය තීරණය කිරීම (1 = High Risk, 0 = Low Risk)
+        # දත්ත Model එකට දීමට පෙර Scale කිරීම
+        features_scaled = scaler.transform(features)
+        
+        # Prediction ලබාගැනීම
+        prediction = model.predict(features_scaled)[0]
+        
+        # ප්‍රතිඵලය තීරණය කිරීම
         if prediction == 1:
             status = "High Health Risk"
-            risk_percent = "75%"
         else:
             status = "Normal / Low Risk"
-            risk_percent = "10%"
 
-        return render_template('index.html', prediction_text=f"Status: {status} | Risk Level: {risk_percent} (BMI: {bmi:.2f})")
+        return render_template('index.html', prediction_text=f"Status: {status} | BMI: {bmi:.2f}")
 
     except Exception as e:
         return render_template('index.html', prediction_text=f"Error occurred: {str(e)}")
